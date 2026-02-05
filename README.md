@@ -2,7 +2,7 @@
 
 Self-hosted web search for OpenClaw agents, powered by [SearXNG](https://docs.searxng.org/).
 
-Replaces or supplements the built-in Brave/Perplexity `web_search` tool with a
+Replaces or supplements the built-in Brave/Perplexity `web_search_v2` tool with a
 privacy-respecting, self-hosted meta-search engine. No API keys required.
 
 ## Quick Start
@@ -61,11 +61,11 @@ plugins:
 openclaw gateway restart
 ```
 
-Agents will now use SearXNG for all `web_search` calls — same tool name, same parameters, no agent changes needed.
+Agents will now use SearXNG for all `web_search_v2` calls — same tool name, same parameters, no agent changes needed.
 
 ### 6. Enable for agents
 
-The tool is registered as **optional** (`web_search`). Add it to your
+The tool is registered as **optional** (`web_search_v2`). Add it to your
 agent's tool allowlist:
 
 ```yaml
@@ -74,7 +74,7 @@ agents:
     - id: my-agent
       tools:
         allow:
-          - web_search
+          - web_search_v2
 ```
 
 ### 5. Restart the gateway
@@ -85,7 +85,7 @@ openclaw gateway restart
 
 ## Tool Reference
 
-### `web_search`
+### `web_search_v2`
 
 | Parameter   | Type   | Required | Description |
 |-------------|--------|----------|-------------|
@@ -139,7 +139,7 @@ curl http://localhost:8888/healthz
 ## Architecture
 
 ```
-Agent → web_search tool → SearxngClient → SearXNG API (localhost:8888)
+Agent → web_search_v2 tool → SearxngClient → SearXNG API (localhost:8888)
                                                      ↓
                                                DuckDuckGo / Google / Bing
 ```

@@ -29,7 +29,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "clawdbot": {
+  "openclaw": {
     "extensions": ["./dist/index.js"]
   }
 }
