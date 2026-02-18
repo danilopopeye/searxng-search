@@ -16,6 +16,7 @@ import { FRESHNESS_MAP } from './types.js';
 const DEFAULT_SEARXNG_URL = 'http://localhost:8888';
 const DEFAULT_ENGINES = ['duckduckgo', 'google', 'bing'];
 const DEFAULT_TIMEOUT = 10_000;
+const DEFAULT_METHOD = 'GET';
 const MAX_COUNT = 10;
 
 // ---------------------------------------------------------------------------
@@ -26,11 +27,13 @@ export class SearxngClient {
   private readonly baseUrl: string;
   private readonly engines: string[];
   private readonly timeout: number;
+  private readonly method: 'GET' | 'POST';
 
   constructor(config?: SearxngPluginConfig) {
     this.baseUrl = (config?.searxngUrl ?? DEFAULT_SEARXNG_URL).replace(/\/+$/, '');
     this.engines = config?.engines ?? DEFAULT_ENGINES;
     this.timeout = config?.timeout ?? DEFAULT_TIMEOUT;
+    this.method = config?.method ?? DEFAULT_METHOD;
   }
 
   /**
@@ -51,27 +54,27 @@ export class SearxngClient {
   ): Promise<{ results: SearchResultItem[]; tookMs: number }> {
     const count = Math.max(1, Math.min(MAX_COUNT, opts?.count ?? 5));
 
-    // Build the query URL
-    const url = new URL('/search', this.baseUrl);
-    url.searchParams.set('q', query);
-    url.searchParams.set('format', 'json');
-    url.searchParams.set('categories', 'general');
+    // Build parameters (used for both GET query string and POST body)
+    const params = new URLSearchParams();
+    params.set('q', query);
+    params.set('format', 'json');
+    params.set('categories', 'general');
 
     // Engines
     if (this.engines.length > 0) {
-      url.searchParams.set('engines', this.engines.join(','));
+      params.set('engines', this.engines.join(','));
     }
 
     // Language (SearXNG uses language codes like "en", "de", "en-US")
     if (opts?.language) {
-      url.searchParams.set('language', opts.language);
+      params.set('language', opts.language);
     }
 
     // Time range (map Brave-style freshness to SearXNG time_range)
     if (opts?.freshness) {
       const mapped = FRESHNESS_MAP[opts.freshness.toLowerCase()];
       if (mapped) {
-        url.searchParams.set('time_range', mapped);
+        params.set('time_range', mapped);
       }
     }
 
@@ -81,7 +84,7 @@ export class SearxngClient {
     if (opts?.country && opts.country.toUpperCase() !== 'ALL') {
       // If language is already set, skip; otherwise construct a locale hint
       if (!opts?.language) {
-        url.searchParams.set('language', `en-${opts.country.toUpperCase()}`);
+        params.set('language', `en-${opts.country.toUpperCase()}`);
       }
     }
 
@@ -90,11 +93,30 @@ export class SearxngClient {
     const timer = setTimeout(() => controller.abort(), this.timeout);
 
     try {
-      const res = await fetch(url.toString(), {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        signal: controller.signal,
-      });
+      let fetchUrl: string;
+      let fetchOptions: RequestInit;
+
+      if (this.method === 'POST') {
+        fetchUrl = `${this.baseUrl}/search`;
+        fetchOptions = {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: params.toString(),
+          signal: controller.signal,
+        };
+      } else {
+        fetchUrl = `${this.baseUrl}/search?${params.toString()}`;
+        fetchOptions = {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        };
+      }
+
+      const res = await fetch(fetchUrl, fetchOptions);
 
       if (!res.ok) {
         const detail = await res.text().catch(() => '');

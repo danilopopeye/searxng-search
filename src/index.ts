@@ -11,7 +11,7 @@
  *   }
  */
 
-import type { OpenClawPluginApi } from 'clawdbot/plugin-sdk';
+import type { OpenClawPluginApi } from './openclaw-types.js';
 import { createSearxngSearchTool } from './search-tool.js';
 import type { SearxngPluginConfig } from './types.js';
 
@@ -42,6 +42,12 @@ export const configSchema = {
         description: 'Request timeout in milliseconds',
         default: 10000,
       },
+      method: {
+        type: 'string',
+        enum: ['GET', 'POST'],
+        description: 'HTTP method for SearXNG API calls',
+        default: 'GET',
+      },
     },
     additionalProperties: false,
   },
@@ -61,6 +67,7 @@ export function register(api: OpenClawPluginApi) {
     searxngUrl: pluginConfig.searxngUrl ?? 'http://localhost:8888',
     engines: pluginConfig.engines ?? ['duckduckgo', 'google', 'bing'],
     timeout: pluginConfig.timeout ?? 10_000,
+    method: pluginConfig.method ?? 'GET',
   };
 
   api.logger.info(

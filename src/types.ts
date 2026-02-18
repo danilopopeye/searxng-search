@@ -13,6 +13,8 @@ export interface SearxngPluginConfig {
   engines?: string[];
   /** Request timeout in milliseconds (default: 10000) */
   timeout?: number;
+  /** HTTP method for SearXNG API calls (default: "GET") */
+  method?: 'GET' | 'POST';
 }
 
 // ---------------------------------------------------------------------------
